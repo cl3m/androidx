@@ -18,21 +18,30 @@ package androidx.compose.mpp.demo
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.window.Application
 
+@OptIn(ExperimentalComposeUiApi::class)
 fun getViewControllerWithCompose() = Application("Compose/Native sample") {
     val textState1 = remember { mutableStateOf("text field 1") }
     val textState2 = remember { mutableStateOf("text field 2") }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     Column {
         Text(".")
         Text(".")
@@ -46,9 +55,18 @@ fun getViewControllerWithCompose() = Application("Compose/Native sample") {
         TextField(value = textState1.value, onValueChange = {
             textState1.value = it
         })
-        TextField(value = textState2.value, onValueChange = {
-            textState2.value = it
-        })
+        TextField(
+            value = textState2.value,
+            onValueChange = {
+                textState2.value = it
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    keyboardController?.hide()
+                    focusManager.clearFocus(true)
+                }
+            ))
         Image(
             painter = object : Painter() {
                 override val intrinsicSize: Size = Size(16f, 16f)

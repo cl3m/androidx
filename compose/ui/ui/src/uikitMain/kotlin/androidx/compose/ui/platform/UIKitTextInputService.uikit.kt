@@ -31,7 +31,7 @@ import kotlin.math.min
 import org.jetbrains.skiko.SkikoInput
 
 internal class UIKitTextInputService(
-    showSoftwareKeyboard: () -> Unit,
+    showSoftwareKeyboard: (ImeOptions) -> Unit,
     hideSoftwareKeyboard: () -> Unit,
     private val updateView: () -> Unit,
     private val textWillChange: () -> Unit,
@@ -42,10 +42,12 @@ internal class UIKitTextInputService(
 
     data class CurrentInput(
         var value: TextFieldValue,
-        val onEditCommand: (List<EditCommand>) -> Unit
+        val imeOptions: ImeOptions,
+        val onEditCommand: (List<EditCommand>) -> Unit,
+        val onImeActionPerformed: (ImeAction) -> Unit
     )
 
-    private val _showSoftwareKeyboard: () -> Unit = showSoftwareKeyboard
+    private val _showSoftwareKeyboard: (ImeOptions) -> Unit = showSoftwareKeyboard
     private val _hideSoftwareKeyboard: () -> Unit = hideSoftwareKeyboard
     private var currentInput: CurrentInput? = null
 
@@ -65,7 +67,7 @@ internal class UIKitTextInputService(
         onEditCommand: (List<EditCommand>) -> Unit,
         onImeActionPerformed: (ImeAction) -> Unit
     ) {
-        currentInput = CurrentInput(value, onEditCommand)
+        currentInput = CurrentInput(value, imeOptions, onEditCommand, onImeActionPerformed)
         showSoftwareKeyboard()
     }
 
@@ -75,7 +77,7 @@ internal class UIKitTextInputService(
     }
 
     override fun showSoftwareKeyboard() {
-        _showSoftwareKeyboard()
+        _showSoftwareKeyboard(currentInput!!.imeOptions)
     }
 
     override fun hideSoftwareKeyboard() {
@@ -119,6 +121,10 @@ internal class UIKitTextInputService(
          * @param text A string object representing the character typed on the system keyboard.
          */
         override fun insertText(text: String) {
+            if (text == "\n" && currentInput?.imeOptions?.imeAction != ImeAction.Default) {
+                currentInput!!.onImeActionPerformed(currentInput!!.imeOptions!!.imeAction)
+                return
+            }
             getCursorPos()?.let {
                 _tempCursorPos = it + text.length
             }

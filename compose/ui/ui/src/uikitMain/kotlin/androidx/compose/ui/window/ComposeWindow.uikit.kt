@@ -27,6 +27,9 @@ import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.platform.UIKitTextInputService
 import androidx.compose.ui.platform.ViewConfiguration
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PlatformTextInputService
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
@@ -44,7 +47,17 @@ import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSSelectorFromString
 import platform.Foundation.NSValue
 import platform.UIKit.CGRectValue
+import platform.UIKit.UIKeyboardTypeASCIICapable
+import platform.UIKit.UIKeyboardTypeDecimalPad
+import platform.UIKit.UIKeyboardTypeDefault
+import platform.UIKit.UIKeyboardTypeEmailAddress
+import platform.UIKit.UIKeyboardTypeNumberPad
+import platform.UIKit.UIKeyboardTypePhonePad
+import platform.UIKit.UIKeyboardTypeURL
+import platform.UIKit.UIReturnKeyType
 import platform.UIKit.UIScreen
+import platform.UIKit.UITextAutocapitalizationType
+import platform.UIKit.UITextAutocorrectionType
 import platform.UIKit.UIViewController
 import platform.UIKit.reloadInputViews
 import platform.UIKit.setClipsToBounds
@@ -124,7 +137,38 @@ internal actual class ComposeWindow : UIViewController {
         val skikoUIView = SkikoUIView(skiaLayer).load()
         view = skikoUIView
         val uiKitTextInputService = UIKitTextInputService(
-            showSoftwareKeyboard = {
+            showSoftwareKeyboard = { imeOptions ->
+                skikoUIView.currentReturnKeyType = when (imeOptions.imeAction) {
+                    ImeAction.None -> UIReturnKeyType.UIReturnKeyDefault
+                    ImeAction.Default -> UIReturnKeyType.UIReturnKeyDefault
+                    ImeAction.Go -> UIReturnKeyType.UIReturnKeyGo
+                    ImeAction.Search -> UIReturnKeyType.UIReturnKeySearch
+                    ImeAction.Send -> UIReturnKeyType.UIReturnKeySend
+                    ImeAction.Previous -> UIReturnKeyType.UIReturnKeyDefault
+                    ImeAction.Next -> UIReturnKeyType.UIReturnKeyNext
+                    ImeAction.Done -> UIReturnKeyType.UIReturnKeyDone
+                    else -> UIReturnKeyType.UIReturnKeyDefault
+                }
+                skikoUIView.currentKeyboardType = when (imeOptions.keyboardType) {
+                    KeyboardType.Text -> UIKeyboardTypeDefault
+                    KeyboardType.Ascii -> UIKeyboardTypeASCIICapable
+                    KeyboardType.Number -> UIKeyboardTypeNumberPad
+                    KeyboardType.Phone -> UIKeyboardTypePhonePad
+                    KeyboardType.Uri -> UIKeyboardTypeURL
+                    KeyboardType.Email -> UIKeyboardTypeEmailAddress
+                    KeyboardType.Password -> UIKeyboardTypeDefault
+                    KeyboardType.NumberPassword -> UIKeyboardTypeDefault
+                    KeyboardType.Decimal -> UIKeyboardTypeDecimalPad
+                    else -> UIKeyboardTypeDefault
+                }
+                skikoUIView.currentAutocorrectionType = if (imeOptions.autoCorrect) UITextAutocorrectionType.UITextAutocorrectionTypeYes else UITextAutocorrectionType.UITextAutocorrectionTypeNo
+                skikoUIView.currentAutocapitalizationType = when (imeOptions.capitalization) {
+                    KeyboardCapitalization.None -> UITextAutocapitalizationType.UITextAutocapitalizationTypeNone
+                    KeyboardCapitalization.Characters -> UITextAutocapitalizationType.UITextAutocapitalizationTypeAllCharacters
+                    KeyboardCapitalization.Words -> UITextAutocapitalizationType.UITextAutocapitalizationTypeWords
+                    KeyboardCapitalization.Sentences -> UITextAutocapitalizationType.UITextAutocapitalizationTypeSentences
+                    else -> UITextAutocapitalizationType.UITextAutocapitalizationTypeSentences
+                }
                 skikoUIView.showScreenKeyboard()
             },
             hideSoftwareKeyboard = {
